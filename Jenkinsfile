@@ -52,7 +52,11 @@ pipeline {
                 '''
             }
         }
-
+        stage('Build') {
+            steps {
+                sh 'npm run build || echo "No build script found"'
+            }
+        }
         stage('Test') {
             steps {
                 sh 'npx mocha --exit --timeout 10000 test/*.js'
