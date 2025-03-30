@@ -31,13 +31,11 @@ pipeline {
                 script {
                     // Install using exact versions and explicit registry
                     sh '''
-                        
-                        
-                     rm -f package-lock.json
-                npm cache clean --force
-                npm install mocha@10.2.0 --save-dev --registry=https://registry.npmjs.org
-                npm install chai@4.3.7 --save-dev --registry=https://registry.npmjs.org
-                npm install
+                    rm -f package-lock.json
+                    npm cache clean --force
+                    npm install mocha@10.2.0 --save-dev --registry=https://registry.npmjs.org
+                    npm install chai@4.3.7 --save-dev --registry=https://registry.npmjs.org
+                    npm install
 
                 
                     '''
