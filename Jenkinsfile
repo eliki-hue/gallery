@@ -38,13 +38,14 @@ pipeline {
 
         stage('Trigger Render Deploy') {
             steps {
-                script {
-                    echo "RENDER_DEPLOY_HOOK = ${env.RENDER_DEPLOY_HOOK}"
-                    echo "Triggering Render deployment..."
-                    // def response = httpRequest '${RENDER_DEPLOY_HOOK}'
-                     httpRequest url: env.RENDER_DEPLOY_HOOK, consoleLogResponseBody: true
-                    echo "Response: ${response.content}"
-                }
+                 script {
+            echo "RENDER_DEPLOY_HOOK = ${env.RENDER_DEPLOY_HOOK}"
+            echo "Triggering Render deployment..."
+            
+            def response = httpRequest url: env.RENDER_DEPLOY_HOOK, consoleLogResponseBody: true
+            
+            echo "Response: ${response.content}"
+        }
             }
         }
     }
