@@ -6,7 +6,7 @@ pipeline {
         MONGO_URI_DEV = credentials('MONGO_URI_DEV')
         MONGO_URI_TEST = credentials('MONGO_URI_TEST')
         RENDER_URL = 'https://gallery-1uvx.onrender.com'
-        NPM_CONFIG_LOGLEVEL = 'info' // Better logging
+        NPM_CONFIG_LOGLEVEL = 'info'
         EMAIL_TO = 'elijah.kiragu2@student.moringaschool.com'
     }
 
@@ -33,15 +33,12 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Install using exact versions and explicit registry
                     sh '''
                     rm -f package-lock.json
                     npm cache clean --force
                     npm install mocha@10.2.0 --save-dev --registry=https://registry.npmjs.org
                     npm install chai@4.3.7 --save-dev --registry=https://registry.npmjs.org
                     npm install
-
-                
                     '''
                 }
             }
@@ -56,13 +53,13 @@ pipeline {
                 '''
             }
         }
+
         stage('Build') {
             steps {
-                sh '''
-                echo "No build script found"
-                '''
+                sh 'echo "No build script found"'
             }
         }
+
         stage('Test') {
             steps {
                 script {
@@ -94,25 +91,31 @@ pipeline {
             }
         }
 
-
         stage('Deploy to Render') {
             steps {
                 sh 'node server.js &'
-                sh 'sleep 15' // Allow server to start
+                sh 'sleep 15'
                 sh "curl -Is ${env.RENDER_URL} | head -n 1"
             }
         }
     }
+
     post {
         always {
-            sh 'pkill -f "node server.js" || echo "No node process to kill"'
+            script {
+                node {
+                    sh 'pkill -f "node server.js" || echo "No node process to kill"'
+                }
+            }
         }
         failure {
-            slackSend (
-                channel: '#yourname_IP1',
-                color: 'danger',
-                message: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
-            )
+            // Comment out slackSend if plugin not installed
+            // slackSend (
+            //     channel: '#yourname_IP1',
+            //     color: 'danger',
+            //     message: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
+            // )
+            echo "Slack notification would be sent here if plugin was installed"
         }
     }
 }
