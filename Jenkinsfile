@@ -54,7 +54,7 @@ pipeline {
         }
         stage('Build') {
             steps {
-                 echo "No build script found"'
+                 echo "No build script found"
             }
         }
         stage('Test') {
