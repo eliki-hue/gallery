@@ -40,9 +40,8 @@ pipeline {
             steps {
                 script {
                     echo "Triggering Render deployment..."
-                    def deployResponse = httpRequest url: env.RENDER_DEPLOY_HOOK, 
-                                                  validResponseCodes: '200,201,202'
-                    echo "Deploy response: ${deployResponse.content}"
+                    def response = httpRequest '${RENDER_DEPLOY_HOOK}'
+                    echo "Response: ${response.content}"
                 }
             }
         }
