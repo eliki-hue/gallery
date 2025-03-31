@@ -1,59 +1,79 @@
+require('dotenv').config(); // Load environment variables
 const express = require('express');
-const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const path = require('path');
 const config = require('./_config');
 
-// Define routes
-let index = require('./routes/index');
-let image = require('./routes/image');
-
-// Initializing the app
+// Initialize app
 const app = express();
 
-// Database connection with improved error handling
-const MONGODB_URI = process.env.MONGODB_URI || config.mongoURI[app.settings.env];
+// =============================================
+// MONGODB CONNECTION (FIXED FOR RENDER)
+// =============================================
+const getMongoURI = () => {
+  // Use Render's env var if available, otherwise fallback to config
+  const uri = process.env.MONGODB_URI || config.mongoURI[app.settings.env];
+  
+  // Convert to SRV format if using standard connection string
+  return uri.startsWith('mongodb://') 
+    ? uri.replace('mongodb://', 'mongodb+srv://') 
+    : uri;
+};
 
-// Updated MongoDB connection with modern settings
-mongoose.connect(MONGODB_URI, { 
-    useNewUrlParser: true, 
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-    socketTimeoutMS: 45000 // Close sockets after 45s of inactivity
+mongoose.connect(getMongoURI(), {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 30000
 })
-.then(() => console.log(`Connected to Database: ${MONGODB_URI.split('@')[1]}`)) // Hide credentials in logs
+.then(() => {
+  const dbHost = mongoose.connection.host;
+  console.log(`✅ Connected to MongoDB cluster: ${dbHost}`);
+})
 .catch(err => {
-    console.error('Database connection error:', err.message);
-    process.exit(1); // Exit if DB connection fails
+  console.error('❌ MongoDB connection error:', err.message);
+  process.exit(1); // Exit if DB connection fails
 });
 
-// View Engine
+// =============================================
+// MIDDLEWARE & ROUTES
+// =============================================
 app.set('view engine', 'ejs');
-
-// Set up the public folder
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Body parser middleware
 app.use(express.json());
 
-// Routes
-app.use('/', index);
-app.use('/image', image);
+// Import routes
+app.use('/', require('./routes/index'));
+app.use('/image', require('./routes/image'));
 
-// Health check endpoint for Render
+// =============================================
+// RENDER-SPECIFIC CONFIGURATION
+// =============================================
+// Health check endpoint (required for Render)
 app.get('/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'OK', 
-        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-    });
+  res.status(200).json({
+    status: 'UP',
+    dbState: mongoose.connection.readyState === 1 ? 'CONNECTED' : 'DISCONNECTED'
+  });
 });
 
-// Server configuration for Render
+// Server startup
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0'; // Critical for Render
 
-app.listen(PORT, HOST, () => {
-    console.log(`Server running on http://${HOST}:${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  server.close(() => {
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
+  });
 });
 
 module.exports = app;
