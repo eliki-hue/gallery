@@ -5,6 +5,7 @@ pipeline {
         RENDER_URL = 'https://gallery-1uvx.onrender.com'
         RENDER_DEPLOY_HOOK = "${RENDER_DEPLOY_HOOK}"  // Use environment variable
         NPM_CONFIG_LOGLEVEL = 'info'
+        EMAIL_TO = 'elijah.kiragu2@student.moringaschool.com'
     }
 
     stages {
@@ -37,10 +38,22 @@ pipeline {
         }
           stage('Test') {
             steps {
-                sh '''
-                    echo "=== Running Tests ==="
-                    npm test || exit 1
-                '''
+                try {
+                        sh '''
+                            echo "=== Running Tests ==="
+                            npm test
+                        '''
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        echo "❌ Tests failed!"
+                        
+                        // Send email on test failure
+                        mail to: ${env.EMAIL_TO},
+                             subject: "❌ Test Failure: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                             body: "The test stage failed. \n\nCheck the logs here: ${env.BUILD_URL}"
+                        
+                        throw e  // Ensure pipeline stops on failure
+                    }
             }
         }
         stage('Trigger Render Deploy') {
@@ -60,9 +73,17 @@ pipeline {
     post {
         success {
             echo "✅ Successfully deployed to Render!"
+            // slackSend(
+            //     color: 'good',
+            //     message: "Deployed: ${env.RENDER_URL}\nBuild: ${env.BUILD_URL}"
+            // )
         }
         failure {
             echo "❌ Deployment failed!"
+            // slackSend(
+            //     color: 'danger',
+            //     message: "Deployed: ${env.RENDER_URL}\nBuild: ${env.BUILD_URL}"
+            // )
         }
     }
 }
