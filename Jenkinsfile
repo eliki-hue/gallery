@@ -55,7 +55,7 @@ pipeline {
                             to: env.EMAIL_TO,
                             attachLog: true,
                             compressLog: true
-                        }
+                        )
                     } catch (err) {
                         emailext (
                             subject: "❌ Test Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
