@@ -35,7 +35,14 @@ pipeline {
                 '''
             }
         }
-
+          stage('Test') {
+            steps {
+                sh '''
+                    echo "=== Running Tests ==="
+                    npm test || exit 1
+                '''
+            }
+        }
         stage('Trigger Render Deploy') {
             steps {
                  script {
