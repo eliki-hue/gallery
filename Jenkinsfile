@@ -2,6 +2,9 @@ pipeline {
     agent any
 
     environment {
+        MONGO_URI_PROD = credentials('MONGO_URI_PROD')
+        MONGO_URI_DEV = credentials('MONGO_URI_DEV')
+        MONGO_URI_TEST = credentials('MONGO_URI_TEST')
         RENDER_URL = 'https://gallery-1uvx.onrender.com'
         NPM_CONFIG_LOGLEVEL = 'info' // Better logging
     }
