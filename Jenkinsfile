@@ -106,16 +106,22 @@ pipeline {
                 node {
                     sh 'pkill -f "node server.js" || echo "No node process to kill"'
                 }
+
+                slackSend (
+                channel: 'elijah_IP1',
+                color: 'danger',
+                message: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}\n${env.RENDER_URL}"
+            )
             }
         }
         failure {
-            // Comment out slackSend if plugin not installed
-            // slackSend (
-            //     channel: '#yourname_IP1',
-            //     color: 'danger',
-            //     message: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
-            // )
-            echo "Slack notification would be sent here if plugin was installed"
+            
+            slackSend (
+                channel: 'elijah_IP1',
+                color: 'danger',
+                message: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
+            )
+            
         }
     }
 }
