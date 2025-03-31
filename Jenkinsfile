@@ -7,6 +7,7 @@ pipeline {
         MONGO_URI_TEST = credentials('MONGO_URI_TEST')
         RENDER_URL = 'https://gallery-1uvx.onrender.com'
         NPM_CONFIG_LOGLEVEL = 'info' // Better logging
+        EMAIL_TO = 'elijah.kiragu2@student.moringaschool.com'
     }
 
     tools {
@@ -64,9 +65,35 @@ pipeline {
         }
         stage('Test') {
             steps {
-                sh 'npx mocha --exit --timeout 10000 test/*.js'
+                script {
+                    try {
+                        sh 'npx mocha --exit --timeout 10000 test/*.js'
+                    } catch (err) {
+                        emailext (
+                            subject: "FAILED: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}",
+                            body: """
+                                <h2>Test Failure Notification</h2>
+                                <p>Job: <b>${env.JOB_NAME}</b></p>
+                                <p>Build Number: <b>#${env.BUILD_NUMBER}</b></p>
+                                <p>Failed Stage: <b>Test</b></p>
+                                <p>Console Output: <a href="${env.BUILD_URL}console">${env.BUILD_URL}console</a></p>
+                                <p>Build URL: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                            """,
+                            to: env.EMAIL_TO,
+                            recipientProviders: [
+                                [$class: 'DevelopersRecipientProvider'],
+                                [$class: 'RequesterRecipientProvider']
+                            ],
+                            attachLog: true,
+                            compressLog: true
+                        )
+                        currentBuild.result = 'FAILURE'
+                        error("Tests failed - notification sent to ${env.EMAIL_TO}")
+                    }
+                }
             }
         }
+
 
         stage('Deploy to Render') {
             steps {
