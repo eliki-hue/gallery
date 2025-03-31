@@ -11,46 +11,49 @@ let image = require('./routes/image');
 // Initializing the app
 const app = express();
 
-// connecting the database
+// Database connection with improved error handling
+const MONGODB_URI = process.env.MONGODB_URI || config.mongoURI[app.settings.env];
 
-const MONGODB_URI = process.env.MONGODB_URI || config.mongoURI[app.settings.env]
-mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true  },(err)=>{
-    if (err) {
-        console.log(err)
-    }else{
-        console.log(`Connected to Database: ${MONGODB_URI}`)
-    }
+// Updated MongoDB connection with modern settings
+mongoose.connect(MONGODB_URI, { 
+    useNewUrlParser: true, 
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+    socketTimeoutMS: 45000 // Close sockets after 45s of inactivity
+})
+.then(() => console.log(`Connected to Database: ${MONGODB_URI.split('@')[1]}`)) // Hide credentials in logs
+.catch(err => {
+    console.error('Database connection error:', err.message);
+    process.exit(1); // Exit if DB connection fails
 });
-
-// test if the database has connected successfully
-// let db = mongoose.connection;
-// db.once('open', ()=>{
-//     console.log('Database connected successfully')
-// })
-
-
-
 
 // View Engine
 app.set('view engine', 'ejs');
 
-// Set up the public folder;
+// Set up the public folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// body parser middleware
-app.use(express.json())
+// Body parser middleware
+app.use(express.json());
 
-
+// Routes
 app.use('/', index);
 app.use('/image', image);
 
-
-
- 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT,() =>{
-    console.log(`Server is listening at http://localhost:${PORT}`)
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'OK', 
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    });
 });
 
+// Server configuration for Render
+const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0'; // Critical for Render
+
+app.listen(PORT, HOST, () => {
+    console.log(`Server running on http://${HOST}:${PORT}`);
+});
 
 module.exports = app;
