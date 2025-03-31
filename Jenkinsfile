@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         RENDER_URL = 'https://gallery-1uvx.onrender.com'
-        NPM_CONFIG_LOGLEVEL = 'info' // Better logging
+        RENDER_DEPLOY_HOOK = credentials('RENDER_DEPLOY_HOOK') // Store in Jenkins credentials
+        NPM_CONFIG_LOGLEVEL = 'info'
     }
 
     tools {
@@ -17,7 +18,8 @@ pipeline {
                     $class: 'GitSCM',
                     branches: [[name: '*/master']],
                     userRemoteConfigs: [[
-                        url: 'https://github.com/eliki-hue/gallery.git'
+                        url: 'https://github.com/eliki-hue/gallery.git',
+                        credentialsId: 'github-credentials' // Add if private repo
                     ]],
                     extensions: [[
                         $class: 'CleanBeforeCheckout'
@@ -26,56 +28,89 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                script {
-                    // Install using exact versions and explicit registry
-                    sh '''
-                    rm -f package-lock.json
-                    npm cache clean --force
-                    npm install mocha@10.2.0 --save-dev --registry=https://registry.npmjs.org
-                    npm install chai@4.3.7 --save-dev --registry=https://registry.npmjs.org
-                    npm install
-
-                
-                    '''
-                }
-            }
-        }
-
-        stage('Verify Installation') {
+        stage('Install & Build') {
             steps {
                 sh '''
-                    echo "Node version: $(node --version)"
-                    echo "NPM version: $(npm --version)"
-                    npm list mocha chai --depth=0
+                    echo "=== Clean Install ==="
+                    rm -rf node_modules package-lock.json
+                    npm cache clean --force
+                    npm install
+                    npm run build --if-present
                 '''
             }
         }
 
         stage('Test') {
             steps {
-                sh 'npx mocha --exit --timeout 10000 test/*.js'
+                sh '''
+                    echo "=== Running Tests ==="
+                    npx mocha --exit --timeout 15000 test/*.js --color
+                '''
+            }
+            post {
+                always {
+                    junit testResults: 'test-results.xml', allowEmptyResults: true
+                }
             }
         }
 
-        stage('Deploy to Render') {
+        stage('Trigger Render Deploy') {
+            when {
+                branch 'master'
+                expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
+            }
             steps {
-                sh 'node server.js &'
-                sh 'sleep 15' // Allow server to start
-                sh "curl -Is ${env.RENDER_URL} | head -n 1"
+                script {
+                    echo "Triggering Render deployment..."
+                    def deployResponse = httpRequest url: env.RENDER_DEPLOY_HOOK, 
+                                                  validResponseCodes: '200,201,202'
+                    echo "Deploy response: ${deployResponse.content}"
+                    
+                    // Verify deployment status
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitUntil {
+                            def healthCheck = sh script: "curl -s -o /dev/null -w '%{http_code}' ${env.RENDER_URL}", 
+                                          returnStdout: true
+                            echo "Health check status: ${healthCheck}"
+                            return healthCheck == '200'
+                        }
+                    }
+                }
             }
         }
     }
+
     post {
         always {
-            sh 'pkill -f "node server.js" || echo "No node process to kill"'
+            echo "=== Pipeline Complete ==="
+            archiveArtifacts artifacts: 'server.log', allowEmptyArchive: true
         }
         failure {
+            script {
+                def testReport = sh script: 'tail -n 50 test-results.xml || echo "No test results"', 
+                                returnStdout: true
+                emailext (
+                    subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                    body: """
+                    <h2>Build Failed</h2>
+                    <p>Render Deploy Hook: ${env.RENDER_DEPLOY_HOOK.replaceAll('.key=.*', '')}</p>
+                    <p>Build URL: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                    <pre>${testReport}</pre>
+                    """,
+                    to: env.EMAIL_TO,
+                    attachLog: true
+                )
+            }
+        }
+        success {
+            echo "✅ Successfully deployed to Render!"
             slackSend (
-                channel: '#yourname_IP1',
-                color: 'danger',
-                message: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
+                channel: '#build-notifications',
+                color: 'good',
+                message: """
+                SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}
+                Render URL: ${env.RENDER_URL}
+                """
             )
         }
     }
