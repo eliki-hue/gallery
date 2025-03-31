@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         RENDER_URL = 'https://gallery-1uvx.onrender.com'
-        RENDER_DEPLOY_HOOK = env.RENDER_DEPLOY_HOOK  // Use environment variable
+        RENDER_DEPLOY_HOOK = "${RENDER_DEPLOY_HOOK}"  // Use environment variable
         NPM_CONFIG_LOGLEVEL = 'info'
     }
 
