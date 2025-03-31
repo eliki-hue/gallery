@@ -1,11 +1,12 @@
-var config = {}
+require('dotenv').config();
 
-// Update to have your correct username and password
-//i have changed all
+var config = {};
+
+// Use environment variables to store sensitive credentials
 config.mongoURI = {
-    production: 'mongodb+srv://eliki:eliki13720@devops09-ip1.zrpcvub.mongodb.net/',
-    development: 'mongodb+srv://eliki:eliki13720@devops09-ip1.zrpcvub.mongodb.net/',
-    test: 'mongodb+srv://eliki:eliki13720@devops09-ip1.zrpcvub.mongodb.net/',
-    
-}
+    production: process.env.MONGO_URI_PROD,
+    development: process.env.MONGO_URI_DEV,
+    test: process.env.MONGO_URI_TEST
+};
+
 module.exports = config;
