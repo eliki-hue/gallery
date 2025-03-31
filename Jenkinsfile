@@ -41,6 +41,21 @@ pipeline {
                     script {
                     try {
                         sh 'npx mocha --exit --timeout 15000 test/*.js --color'
+
+                        echo 'sending email'
+                        emailext (
+                            subject: "Test passed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                            body: """
+                            <h2>Test Failure Notification</h2>
+                            <p><b>Job:</b> ${env.JOB_NAME}</p>
+                            <p><b>Build Number:</b> ${env.BUILD_NUMBER}</p>
+                            <p><b>Console Output:</b> <a href="${env.BUILD_URL}console">View Logs</a></p>
+                            <p><b>Build URL:</b> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                            """,
+                            to: env.EMAIL_TO,
+                            attachLog: true,
+                            compressLog: true
+                        }
                     } catch (err) {
                         emailext (
                             subject: "❌ Test Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
