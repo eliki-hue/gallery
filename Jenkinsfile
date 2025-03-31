@@ -107,20 +107,20 @@ pipeline {
                     sh 'pkill -f "node server.js" || echo "No node process to kill"'
                 }
 
-                slackSend (
-                channel: 'elijah_IP1',
-                color: 'success',
-                message: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}\n${env.RENDER_URL}"
-            )
+            //     slackSend (
+            //     channel: 'elijah_IP1',
+            //     color: 'success',
+            //     message: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}\n${env.RENDER_URL}"
+            // )
             }
         }
         failure {
             
-            slackSend (
-                channel: 'elijah_IP1',
-                color: 'danger',
-                message: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
-            )
+            // slackSend (
+            //     channel: 'elijah_IP1',
+            //     color: 'danger',
+            //     message: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}"
+            // )
             
         }
     }
