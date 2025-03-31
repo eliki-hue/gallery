@@ -37,7 +37,7 @@ pipeline {
             }
         }
           stage('Test') {
-            steps {
+                steps {
                     script {
                     try {
                         sh 'npx mocha --exit --timeout 15000 test/*.js --color'
@@ -57,6 +57,7 @@ pipeline {
                         )
                         error("Tests failed - email sent")
                     } 
+               }
             }
         }
         stage('Trigger Render Deploy') {
