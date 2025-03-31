@@ -56,7 +56,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'echo "No build script found"'
+                echo "No build script found"
             }
         }
 
@@ -64,7 +64,8 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'npx mocha --exit --timeout 10000 test/*.js'
+                        sh 'npx mocha --exit --timeout 10000 test/*.js',
+                        
                     } catch (err) {
                         emailext (
                             subject: "FAILED: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}",
