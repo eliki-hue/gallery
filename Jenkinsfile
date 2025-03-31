@@ -41,7 +41,8 @@ pipeline {
                 script {
                     echo "RENDER_DEPLOY_HOOK = ${env.RENDER_DEPLOY_HOOK}"
                     echo "Triggering Render deployment..."
-                    def response = httpRequest '${RENDER_DEPLOY_HOOK}'
+                    // def response = httpRequest '${RENDER_DEPLOY_HOOK}'
+                     httpRequest url: env.RENDER_DEPLOY_HOOK, consoleLogResponseBody: true
                     echo "Response: ${response.content}"
                 }
             }
