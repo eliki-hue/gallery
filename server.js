@@ -12,12 +12,14 @@ const app = express();
 // =============================================
 const getMongoURI = () => {
   // Use Render's env var if available, otherwise fallback to config
-  const uri = process.env.MONGODB_URI || config.mongoURI[app.settings.env];
-  
-  // Convert to SRV format if using standard connection string
-  return uri.startsWith('mongodb://') 
-    ? uri.replace('mongodb://', 'mongodb+srv://') 
-    : uri;
+  let uri = process.env.MONGODB_URI || config.mongoURI[app.settings.env];
+
+  // Convert to SRV format only if it's a non-SRV MongoDB URI
+  if (uri.startsWith('mongodb://') && !uri.includes('mongodb+srv://')) {
+    uri = uri.replace('mongodb://', 'mongodb+srv://');
+  }
+
+  return uri;
 };
 
 mongoose.connect(getMongoURI(), {
@@ -27,8 +29,7 @@ mongoose.connect(getMongoURI(), {
   socketTimeoutMS: 30000
 })
 .then(() => {
-  const dbHost = mongoose.connection.host;
-  console.log(`✅ Connected to MongoDB cluster: ${dbHost}`);
+  console.log(`✅ Connected to MongoDB at ${mongoose.connection.host}`);
 })
 .catch(err => {
   console.error('❌ MongoDB connection error:', err.message);
@@ -49,7 +50,7 @@ app.use('/image', require('./routes/image'));
 // =============================================
 // RENDER-SPECIFIC CONFIGURATION
 // =============================================
-// Health check endpoint (required for Render)
+// Health check endpoint (Render requires this)
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'UP',
@@ -59,20 +60,19 @@ app.get('/health', (req, res) => {
 
 // Server startup
 const PORT = process.env.PORT || 5000;
-const HOST = process.env.HOST || '0.0.0.0'; // Critical for Render
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('SIGTERM received. Shutting down gracefully...');
+  await mongoose.connection.close(false);
+  console.log('MongoDB connection closed');
   server.close(() => {
-    mongoose.connection.close(false, () => {
-      console.log('MongoDB connection closed');
-      process.exit(0);
-    });
+    console.log('Server shutdown complete.');
+    process.exit(0);
   });
 });
 
