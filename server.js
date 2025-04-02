@@ -60,11 +60,11 @@ app.get('/health', (req, res) => {
 
 // Server startup
 const PORT = process.env.PORT || 5000;
+// const HOST = process.env.HOST || '0.0.0.0'; 
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
-
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received. Shutting down gracefully...');
