@@ -101,7 +101,7 @@ pipeline {
             echo "❌ Deployment failed!"
             slackSend(
                 color: 'danger',
-                message: "Deployed: ${env.RENDER_URL}\nBuild: ${env.BUILD_URL}"
+                message: "Deployed: ${env.RENDER_URL}\nBuild: ${env.BUILD_ID}"
             )
         }
     }
