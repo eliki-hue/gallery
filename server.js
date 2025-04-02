@@ -47,10 +47,7 @@ app.use(express.json());
 app.use('/', require('./routes/index'));
 app.use('/image', require('./routes/image'));
 
-// =============================================
-// RENDER-SPECIFIC CONFIGURATION
-// =============================================
-// Health check endpoint (Render requires this)
+
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'UP',
