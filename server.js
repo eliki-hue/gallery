@@ -61,8 +61,8 @@ app.get('/health', (req, res) => {
 // Server startup
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
 });
 
 // Graceful shutdown
@@ -75,5 +75,5 @@ process.on('SIGTERM', async () => {
     process.exit(0);
   });
 });
-
+console.log(`🌍 Render assigned PORT: ${process.env.PORT}`);
 module.exports = app;
