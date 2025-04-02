@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        RENDER_URL = 'https://gallery-1uvx.onrender.com'
+        RENDER_URL = 'https://gallery-webservice.onrender.com'
         RENDER_DEPLOY_HOOK = "${RENDER_DEPLOY_HOOK}"  // Use environment variable
         NPM_CONFIG_LOGLEVEL = 'info'
         EMAIL_TO = 'elijah.kiragu2@student.moringaschool.com'
@@ -92,17 +92,17 @@ pipeline {
     post {
         success {
             echo "✅ Successfully deployed to Render!"
-            // slackSend(
-            //     color: 'good',
-            //     message: "Deployed: ${env.RENDER_URL}\nBuild: ${env.BUILD_URL}"
-            // )
+            slackSend(
+                color: 'good',
+                message: "Deployed: ${env.RENDER_URL}\nBuild: ${env.BUILD_URL}"
+            )
         }
         failure {
             echo "❌ Deployment failed!"
-            // slackSend(
-            //     color: 'danger',
-            //     message: "Deployed: ${env.RENDER_URL}\nBuild: ${env.BUILD_URL}"
-            // )
+            slackSend(
+                color: 'danger',
+                message: "Deployed: ${env.RENDER_URL}\nBuild: ${env.BUILD_URL}"
+            )
         }
     }
 }
